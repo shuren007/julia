@@ -790,9 +790,9 @@ STATIC_INLINE void jl_array_grow_at_end(jl_array_t *a, size_t idx,
     if (__unlikely((n + inc) > a->maxsize - a->offset)) {
         size_t nb1 = idx * elsz;
         size_t nbinc = inc * elsz;
-        size_t newlen = a->maxsize == 0 ? (inc < 4 ? 4 : inc) : a->maxsize * 2;
+        size_t newlen = a->maxsize < 2 ? (inc<4?4:inc) : (a->maxsize*3)>>1;
         while ((n + inc) > newlen - a->offset)
-            newlen *= 2;
+            newlen = (newlen*3)>>1;
         newlen = limit_overallocation(a, n, newlen, inc);
         int newbuf = array_resize_buffer(a, newlen);
         char *newdata = (char*)a->data + a->offset * elsz;
