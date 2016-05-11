@@ -382,6 +382,10 @@ julia> push!([1, 2, 3], 4, 5, 6)
  6
 ```
 
+Internally, the storage for the array is increased exponentially (by 50%)
+as needed, so that calling `push!` ``n`` times on an empty array
+involves only ``O(\\log n)`` allocations and ``O(n)`` time.
+
 Use [`append!`](@ref) to add all the elements of another collection to
 `collection`. The result of the preceding example is equivalent to `append!([1, 2, 3], [4,
 5, 6])`.
@@ -402,7 +406,6 @@ Returns the file descriptor backing the stream or file. Note that this function 
 to synchronous `File`'s and `IOStream`'s not to any of the asynchronous streams.
 """
 fd
-
 
 """
     ones([A::AbstractArray,] [T=eltype(A)::Type,] [dims=size(A)::Tuple])
