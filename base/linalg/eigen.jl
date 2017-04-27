@@ -3,7 +3,7 @@
 # pick a canonical ordering to avoid returning eigenvalues in "random" order
 # as is the LAPACK default (for complex λ — LAPACK sorts by λ for the Hermitian/Symmetric case)
 eigsortby(λ::Real) = λ
-eigsortby(λ::Complex) = (abs(λ),real(λ),imag(λ))
+eigsortby(λ::Complex) = (real(λ),imag(λ))
 function sorteig!(λ, X)
     if !issorted(λ, by=eigsortby)
         p = sortperm(λ; alg=QuickSort, by=eigsortby)
