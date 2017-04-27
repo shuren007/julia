@@ -573,8 +573,8 @@ end
 factorize(A::Bidiagonal) = A
 
 # Eigensystems
-eigvals(M::Bidiagonal) = M.dv
-function eigvecs(M::Bidiagonal{T}) where T
+eigvals(M::Bidiagonal) = sort(M.dv, by=eigsortby)
+function eigvecs_(M::Bidiagonal{T}) where T # non-sorted eigenvectors
     n = length(M.dv)
     Q = Matrix{T}(n,n)
     blks = [0; find(x -> x == 0, M.ev); n]
@@ -606,7 +606,7 @@ function eigvecs(M::Bidiagonal{T}) where T
     end
     Q #Actually Triangular
 end
-eigfact(M::Bidiagonal) = Eigen(eigvals(M), eigvecs(M))
+eigfact(M::Bidiagonal) = Eigen(copy(M.dv), eigvecs_(M))
 
 # fill! methods
 _valuefields(::Type{<:Diagonal}) = [:diag]

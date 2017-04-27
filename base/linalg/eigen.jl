@@ -1,5 +1,18 @@
 # This file is a part of Julia. License is MIT: https://julialang.org/license
 
+# pick a canonical ordering to avoid returning eigenvalues in "random" order
+# as is the LAPACK default (for complex λ — LAPACK sorts by λ for the Hermitian/Symmetric case)
+eigsortby(λ::Real) = λ
+eigsortby(λ::Complex) = (abs(λ),real(λ),imag(λ))
+function sorteig!(λ, X)
+    if !issorted(λ, by=eigsortby)
+        p = sortperm(λ; alg=QuickSort, by=eigsortby)
+        permute!(λ, p)
+        Base.permutecols!!(X, p)
+    end
+    return λ, X
+end
+
 # Eigendecomposition
 struct Eigen{T,V,S<:AbstractMatrix,U<:AbstractVector} <: Factorization{T}
     values::U
@@ -8,7 +21,7 @@ struct Eigen{T,V,S<:AbstractMatrix,U<:AbstractVector} <: Factorization{T}
         new(values, vectors)
 end
 Eigen(values::AbstractVector{V}, vectors::AbstractMatrix{T}) where {T,V} =
-    Eigen{T,V,typeof(vectors),typeof(values)}(values, vectors)
+    Eigen{T,V,typeof(vectors),typeof(values)}(sorteig!(values, vectors)...)
 
 # Generalized eigenvalue problem.
 struct GeneralizedEigen{T,V,S<:AbstractMatrix,U<:AbstractVector} <: Factorization{T}
@@ -18,7 +31,7 @@ struct GeneralizedEigen{T,V,S<:AbstractMatrix,U<:AbstractVector} <: Factorizatio
         new(values, vectors)
 end
 GeneralizedEigen(values::AbstractVector{V}, vectors::AbstractMatrix{T}) where {T,V} =
-    GeneralizedEigen{T,V,typeof(vectors),typeof(values)}(values, vectors)
+    GeneralizedEigen{T,V,typeof(vectors),typeof(values)}(sorteig!(values, vectors)...)
 
 
 function getindex(A::Union{Eigen,GeneralizedEigen}, d::Symbol)
@@ -171,11 +184,11 @@ make rows and columns more equal in norm.
 function eigvals!(A::StridedMatrix{<:BlasReal}; permute::Bool=true, scale::Bool=true)
     issymmetric(A) && return eigvals!(Symmetric(A))
     _, valsre, valsim, _ = LAPACK.geevx!(permute ? (scale ? 'B' : 'P') : (scale ? 'S' : 'N'), 'N', 'N', 'N', A)
-    return iszero(valsim) ? valsre : complex.(valsre, valsim)
+    return sort!(iszero(valsim) ? valsre : complex.(valsre, valsim); by=eigsortby)
 end
 function eigvals!(A::StridedMatrix{<:BlasComplex}; permute::Bool=true, scale::Bool=true)
     ishermitian(A) && return eigvals(Hermitian(A))
-    return LAPACK.geevx!(permute ? (scale ? 'B' : 'P') : (scale ? 'S' : 'N'), 'N', 'N', 'N', A)[2]
+    return sort!(LAPACK.geevx!(permute ? (scale ? 'B' : 'P') : (scale ? 'S' : 'N'), 'N', 'N', 'N', A)[2]; by=eigsortby)
 end
 
 """
@@ -352,7 +365,7 @@ julia> B = [0 1; 1 0]
  1  0
 
 julia> eig(A, B)
-(Complex{Float64}[0.0+1.0im, 0.0-1.0im], Complex{Float64}[0.0-1.0im 0.0+1.0im; -1.0-0.0im -1.0+0.0im])
+(Complex{Float64}[0.0-1.0im, 0.0+1.0im], Complex{Float64}[0.0+1.0im 0.0-1.0im; -1.0+0.0im -1.0-0.0im])
 ```
 """
 function eig(A::AbstractMatrix, B::AbstractMatrix)
@@ -372,12 +385,12 @@ Same as [`eigvals`](@ref), but saves space by overwriting the input `A` (and `B`
 function eigvals!(A::StridedMatrix{T}, B::StridedMatrix{T}) where T<:BlasReal
     issymmetric(A) && isposdef(B) && return eigvals!(Symmetric(A), Symmetric(B))
     alphar, alphai, beta, vl, vr = LAPACK.ggev!('N', 'N', A, B)
-    return (iszero(alphai) ? alphar : complex.(alphar, alphai))./beta
+    return sort!((iszero(alphai) ? alphar : complex.(alphar, alphai))./beta; by=eigsortby)
 end
 function eigvals!(A::StridedMatrix{T}, B::StridedMatrix{T}) where T<:BlasComplex
     ishermitian(A) && isposdef(B) && return eigvals!(Hermitian(A), Hermitian(B))
     alpha, beta, vl, vr = LAPACK.ggev!('N', 'N', A, B)
-    alpha./beta
+    sort!(alpha./beta; by=eigsortby)
 end
 
 """
@@ -400,8 +413,8 @@ julia> B = [0 1; 1 0]
 
 julia> eigvals(A,B)
 2-element Array{Complex{Float64},1}:
- 0.0+1.0im
  0.0-1.0im
+ 0.0+1.0im
 ```
 """
 function eigvals(A::AbstractMatrix{TA}, B::AbstractMatrix{TB}) where {TA,TB}
@@ -430,8 +443,8 @@ julia> B = [0 1; 1 0]
 
 julia> eigvecs(A, B)
 2×2 Array{Complex{Float64},2}:
-  0.0-1.0im   0.0+1.0im
- -1.0-0.0im  -1.0+0.0im
+  0.0+1.0im   0.0-1.0im
+ -1.0+0.0im  -1.0-0.0im
 ```
 """
 eigvecs(A::AbstractMatrix, B::AbstractMatrix) = eigvecs(eigfact(A, B))

@@ -350,8 +350,8 @@ function pinv{T}(D::Diagonal{T}, tol::Real)
 end
 
 #Eigensystem
-eigvals(D::Diagonal{<:Number}) = D.diag
-eigvals(D::Diagonal) = [eigvals(x) for x in D.diag] #For block matrices, etc.
+eigvals(D::Diagonal{<:Number}) = sort(D.diag, by=eigsortby)
+eigvals(D::Diagonal) = sort!(vcat((eigvals(x) for x in D.diag)...),by=eigsortby) #For block matrices, etc.
 eigvecs(D::Diagonal) = eye(D)
 eigfact(D::Diagonal) = Eigen(eigvals(D), eigvecs(D))
 
