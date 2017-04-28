@@ -230,6 +230,7 @@ end
     @testset for elty in (Complex64, Complex128)
         A = rand(elty,10,10)
         Aw, Avl, Avr = LAPACK.geev!('N','V',copy(A))
+        LinAlg.sorteig!(Aw,Avr)
         fA = eigfact(A)
         @test fA[:values] ≈ Aw
         @test fA[:vectors] ≈ Avr
@@ -529,18 +530,21 @@ end
 @testset "trrfs & trevc" begin
     @testset for elty in (Float32, Float64, Complex64, Complex128)
         T = triu(rand(elty,10,10))
+        i = sortperm(diag(T), by=LinAlg.eigsortby)[1]
         S = copy(T)
         select = zeros(Base.LinAlg.BlasInt,10)
-        select[1] = 1
+        select[i] = 1
         select,Vr = LAPACK.trevc!('R','S',select,copy(T))
-        @test Vr ≈ eigvecs(S)[:,1]
+        v = eigvecs(S)[:,1]
+        @test Vr ≈ v * Vr[i] / v[i]
         select = zeros(Base.LinAlg.BlasInt,10)
-        select[1] = 1
+        select[i] = 1
         select,Vl = LAPACK.trevc!('L','S',select,copy(T))
         select = zeros(Base.LinAlg.BlasInt,10)
-        select[1] = 1
+        select[i] = 1
         select,Vln,Vrn = LAPACK.trevc!('B','S',select,copy(T))
-        @test Vrn ≈ eigvecs(S)[:,1]
+        v = eigvecs(S)[:,1]
+        @test Vrn ≈ v * Vrn[i] / v[i]
         @test Vln ≈ Vl
         @test_throws ArgumentError LAPACK.trevc!('V','S',select,copy(T))
         @test_throws DimensionMismatch LAPACK.trrfs!('U','N','N',T,rand(elty,10,10),rand(elty,10,11))
