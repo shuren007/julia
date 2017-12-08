@@ -1811,6 +1811,15 @@
             (expand-forms e)
             (expand-forms `(call (top broadcast!) (top identity) ,lhs-view ,e))))))
 
+; Convert f(_,y) into x -> f(x,y) etcetera.  That is, an _ in e is changed into the
+; argument of an anonymous function.  Currently, only a single underscore is allowed.
+(define (curry-underscore e)
+  (let* ((x (gensy))
+         (u (memq '_ e)))
+    (if (not u) (error "expecting _ in argument list"))
+    (if (memq '_ (cdr u)) (error "only a single _ argument is allowed"))
+    (expand-forms (list '-> x (map (lambda (y) (if (eq? '_ y) x y)) e)))))
+
 (define (expand-where body var)
   (let* ((bounds (analyze-typevar var))
          (v  (car bounds)))
@@ -1950,7 +1959,9 @@
 
    '|.|
    (lambda (e) ; e = (|.| f x)
-     (expand-fuse-broadcast '() e))
+     (if (eq? '_ (cadr e))
+         (curry-underscore e) ; curry _.x
+         (expand-fuse-broadcast '() e)))
 
    '.=
    (lambda (e)
@@ -2161,7 +2172,9 @@
    (lambda (e)
      (if (length> e 2)
          (let ((f (cadr e)))
-           (cond ((dotop? f)
+           (cond ((memq '_ (cddr e))
+                  (curry-underscore e))
+                 ((dotop? f)
                   (expand-fuse-broadcast '() `(|.| ,(undotop f) (tuple ,@(cddr e)))))
                  ((eq? f 'ccall)
                   (if (not (length> e 4)) (error "too few arguments to ccall"))
