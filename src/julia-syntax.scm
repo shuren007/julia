@@ -1959,9 +1959,7 @@
 
    '|.|
    (lambda (e) ; e = (|.| f x)
-     (if (eq? '_ (cadr e))
-         (curry-underscore e) ; curry _.x
-         (expand-fuse-broadcast '() e)))
+     (expand-fuse-broadcast '() e))
 
    '.=
    (lambda (e)
