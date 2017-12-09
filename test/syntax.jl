@@ -1249,6 +1249,14 @@ end
 # issue #9972
 @test Meta.lower(@__MODULE__, :(f(;3))) == Expr(:error, "invalid keyword argument syntax \"3\"")
 
+@testset "underscore currying" begin
+    @test div(_, 3)(13) === 4
+    @test (_+1)(3) === 4
+    @test (_.re)(5+6im) === 5
+    @test (_[2])([7,8,9]) === 8
+    @Meta.lower(@__MODULE__, :(_ + _)) == Expr(:error, "only a single _ argument is allowed")
+end
+
 # issue #25055, make sure quote makes new Exprs
 function f25055()
     x = quote end
