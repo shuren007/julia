@@ -1254,6 +1254,8 @@ end
     @test (_+1)(3) === 4
     @test (_.re)(5+6im) === 5
     @test (_[2])([7,8,9]) === 8
+    @test div.(10,_)([1,2,3,4]) == [10,5,3,2]
+    @test (_ .+ 1)([1,2,3,4]) == [2,3,4,5]
     @Meta.lower(@__MODULE__, :(_ + _)) == Expr(:error, "only a single _ argument is allowed")
 end
 
