@@ -252,7 +252,8 @@ julia> mean(_[2], [ [1,3,4], [1,2,5], [3,1,2], [4,4,4] ])
 ```
 
 The `_` construction only applies to a *single* function call,
-not to nested function calls.  For example, the expression `2*_ + 1`, or
+not to nested function calls: `f(g(_))` is equivalent to `f(x -> g(x))`, not
+to `x -> f(g(x))`.  For example, the expression `2*_ + 1`, or
 equivalently the nested call `(+)((*)(2,_), 1)`, only converts `2*_`
 into a function, so the whole expression becomes `(x->2*x) + 1`, which
 will give an error because no method is defined to add `+ 1` to a function.
