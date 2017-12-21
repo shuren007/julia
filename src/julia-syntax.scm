@@ -1814,11 +1814,13 @@
 ; Convert f(_,y) into x -> f(x,y) etcetera.  That is, an _ in e is changed into the
 ; argument of an anonymous function.  Currently, only a single underscore is allowed.
 (define (curry-underscore e)
-  (let* ((x (gensy))
-         (u (memq '_ e)))
-    (if (not u) (error "expecting _ in argument list"))
-    (if (memq '_ (cdr u)) (error "only a single _ argument is allowed"))
-    (expand-forms (list '-> x (map (lambda (y) (if (eq? '_ y) x y)) e)))))
+  (let* ((args '())
+         (enew (map (lambda (y) (if (eq? '_ y)
+                                    (let ((x (gensy)))
+                                      (set! args (cons x args))
+                                      x)
+                                    y)) e)))
+    (expand-forms `(-> (tuple ,@(reverse args)) ,enew))))
 
 (define (expand-where body var)
   (let* ((bounds (analyze-typevar var))

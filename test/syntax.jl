@@ -1256,7 +1256,7 @@ end
     @test (_[2])([7,8,9]) === 8
     @test div.(10,_)([1,2,3,4]) == [10,5,3,2]
     @test (_ .+ 1)([1,2,3,4]) == [2,3,4,5]
-    @test Meta.lower(Main, Meta.parse("_ + _")) == Expr(:error, "only a single _ argument is allowed")
+    @test (_ // _)(3,4) === 3//4
 end
 
 # issue #25055, make sure quote makes new Exprs
