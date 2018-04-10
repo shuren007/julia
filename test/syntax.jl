@@ -1264,6 +1264,7 @@ end
     @test round(_, 2, base=2)(pi) === round(_, _, base=2)(pi, 2) == 3.25
     @test split(_)("a b") == ["a","b"]
     @test split(_, limit=2)("a b c") == ["a","b c"]
+    @test Meta.lower(@__MODULE__, :(f(_...))) == Expr(:error, "invalid underscore argument \"_...\"")
 end
 
 # issue #25055, make sure quote makes new Exprs
