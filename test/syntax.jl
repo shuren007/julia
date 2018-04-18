@@ -1260,8 +1260,10 @@ end
     @test div.(10,_)([1,2,3,4]) == [10,5,3,2]
     @test (_ .+ 1)([1,2,3,4]) == [2,3,4,5]
     @test (_ // _)(3,4) === 3//4
-    @test round(_, 2, base=10)(pi) == 3.14
-    @test round(_, 2, base=2)(pi) === round(_, _, base=2)(pi, 2) == 3.25
+    let _round(x,d; kws...) = round(x; digits=d, kws...) # test a 2-arg func with keywords
+        @test _round(_, 2, base=10)(pi) == 3.14
+        @test _round(_, 2, base=2)(pi) === _round(_, _, base=2)(pi, 2) == 3.25
+    end
     @test split(_)("a b") == ["a","b"]
     @test split(_, limit=2)("a b c") == ["a","b c"]
     @test Meta.lower(@__MODULE__, :(f(_...))) == Expr(:error, "invalid underscore argument \"_...\"")
